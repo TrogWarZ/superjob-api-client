@@ -4,7 +4,7 @@
 *	Рассматривается вывод списков компаний, вакансий,
 *	а так же вывод вакансий с контактами через OAuth
 *
-*	Для того, чтобы работал пример с OAuth, 
+*	Для того, чтобы заработал пример, 
 *	поправьте константы CLIENT_ID и CLIENT_SECRET
 **/
 
@@ -14,14 +14,15 @@ include_once(dirname(__FILE__).'/../SuperjobAPI.php');
 // ID app
 define("CLIENT_ID", 1); 
 // Secret key
-define("CLIENT_SECRET", "secret_code_here");
+define("CLIENT_SECRET", "change_your_secret_code_here");
 
 
 try 
 {
 	$API = new SuperjobAPI(); //можно и так: SuperjobAPI::instance();
+	$API->setSecretKey(CLIENT_SECRET);
 	$clients = $API->clients(array('keyword' => 'Газпром', 'page' => 2, 'count' => 5));
-	$vacancies = $API->vacancies(CLIENT_SECRET, array('keyword' => 'php', 'town' => 4, 'page' => 1, 'count' => 5));
+	$vacancies = $API->vacancies(array('keyword' => 'php', 'town' => 4, 'page' => 1, 'count' => 5));
 	
 	$redirect_uri = "http://{$_SERVER['HTTP_HOST']}{$_SERVER['SCRIPT_NAME']}?access=1#oauth";
 	
@@ -35,17 +36,17 @@ try
 		$token_info = $API->fetchAccessToken($_REQUEST['code'], $redirect_uri, CLIENT_ID, CLIENT_SECRET);
 
 		$access_token = $token_info['access_token'];
+		$API->setAccessToken($access_token);
+		
 		// Под кем зашёл пользователь?
-		$user = $API->current_user($access_token);
+		$user = $API->current_user();
 
 		$vacancies_with_contacts = $API->vacancies(
-					CLIENT_SECRET,
 					array(
 						'keyword' => 'php',
 						'count' => 10, 
 						't' => array(12, 13)
-					), 
-					$access_token
+					)
 				);
 	}
 }
@@ -71,14 +72,15 @@ catch (SuperjobAPIException $e)
 <div class="contacts">Ключевое слово: Газпром; вывод по 5 компаний; 3-я страница поиска.</div>
 <table cellpadding=4 cellspacing=4>
 <?
-	foreach ($clients['objects'] as $v)
-	{
-		echo '<tr><td><p>
-			<a href="'.$v['link'].'" target=_blank>'.$v['title'].'</a>
-			</p></td><td>'.
-			((!empty($v['client_logo'])) ? '<img src="'.$v['client_logo'].'" border=0><br>' : '').
-			'</td></tr>';
-	}
+	if (!empty($clients['objects']))
+		foreach ($clients['objects'] as $v)
+		{
+			echo '<tr><td><p>
+				<a href="'.$v['link'].'" target=_blank>'.$v['title'].'</a>
+				</p></td><td>'.
+				((!empty($v['client_logo'])) ? '<img src="'.$v['client_logo'].'" border=0><br>' : '').
+				'</td></tr>';
+		}
 ?>
 </table>
 <?
